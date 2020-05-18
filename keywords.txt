@@ -1,0 +1,30 @@
+##########################################
+# Syntax Coloring Map for Kaa IoT Platform
+##########################################
+
+##########################################
+# Datatypes (KEYWORD1)
+##########################################
+
+Kaa		KEYWORD1
+
+##########################################
+# Methods and Functions (KEYWORD2)
+##########################################
+
+connect				KEYWORD2
+sendMetadata			KEYWORD2
+messageArrivedCallback		KEYWORD2
+sendCommandResultAllIds		KEYWORD2
+sendCommandResult		KEYWORD2
+sendCommandResultRaw		KEYWORD2
+sendDataRaw			KEYWORD2
+requestConfig			KEYWORD2
+setCommandCallback		KEYWORD2
+setToken			KEYWORD2
+setAppVersion			KEYWORD2
+composeTopics			KEYWORD2
+
+##########################################
+# Constants (LITERAL1)
+##########################################

@@ -26,6 +26,7 @@ char command_result_topic[100];
 
 int (*commandCallback)(char* command_type, char* payload, unsigned int len);
 
+#ifndef EXTERNAL_DEBUG_IMPLEMENTATION
 void printMsg(const char * msg, ...) {
   char buff[256];
   va_list args;
@@ -34,6 +35,7 @@ void printMsg(const char * msg, ...) {
   buff[sizeof(buff) - 1] = '\0';
   Serial.print(buff);
 }
+#endif
 
 void cexMessageHandler(char* topic_part, char* payload, unsigned int len) {
   char command_type[50];

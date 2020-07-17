@@ -3,7 +3,7 @@
 #include <ArduinoJson.h>
 #include "kaa.h"
 
-#define KAA_SERVER "cloud.kaaiot.com"
+#define KAA_SERVER "mqtt.cloud.kaaiot.com"
 #define KAA_PORT 1883
 #define KAA_TOKEN "**********"
 #define KAA_APP_VERSION "**********"

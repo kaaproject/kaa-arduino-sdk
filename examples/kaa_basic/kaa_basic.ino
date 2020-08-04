@@ -150,24 +150,25 @@ void setup() {
 }
 
 void loop() {
+  //Checking connection
   if (!client.connected())
   {
-    //Checking connection
     now = millis();
     if ( ((now - last_reconnect) > RECONNECT_TIME) || (now < last_reconnect) )
     {
       last_reconnect = now;
       reconnect();
     }
-  } else {
-    //Sending something
-    now = millis();
-    if ( ((now - last_msg) > SEND_TIME) || (now < last_msg) )
-    {
-      last_msg = now;
-      //Send something here
-      sendOutputsState();
-    }
+    return;
   }
   client.loop();
+
+  //Sending something
+  now = millis();
+  if ( ((now - last_msg) > SEND_TIME) || (now < last_msg) )
+  {
+    last_msg = now;
+    //Send something here
+    sendOutputsState();
+  }
 }

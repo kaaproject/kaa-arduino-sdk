@@ -91,6 +91,7 @@ int commandCallback(char* command_type, char* payload, unsigned int len) {
   else {
     PRINT_DBG("Unknown command\n");
   }
+  return 0;
 }
 
 void setupWifi() {

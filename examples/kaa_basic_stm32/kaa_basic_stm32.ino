@@ -274,11 +274,6 @@ void composeAndSendMetadata() {
   kaa.sendMetadata(doc_data.as<String>().c_str());
 }
 
-void changeOutputState(int output_number, int output_state) {
-  digitalWrite(LED_BUILTIN, output_state);
-  sendOutputsState();
-}
-
 void sendOutputsState() {
   StaticJsonDocument<255> doc_data;
 
@@ -286,6 +281,11 @@ void sendOutputsState() {
   doc_data[0][OUTPUT_1_NAME] = digitalRead(LED_BUILTIN);
   
   kaa.sendDataRaw(doc_data.as<String>().c_str());
+}
+
+void changeOutputState(int output_number, int output_state) {
+  digitalWrite(LED_BUILTIN, output_state);
+  sendOutputsState();
 }
 
 int commandCallback(char* command_type, char* payload, unsigned int len) {

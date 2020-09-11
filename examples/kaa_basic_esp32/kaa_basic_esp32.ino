@@ -1,4 +1,4 @@
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include "kaa.h"
@@ -39,6 +39,13 @@ void printMsg(const char * msg, ...) {
   Serial.print(buff);
 }
 
+String getChipId(){
+  char buf[20];
+  uint64_t chipid = ESP.getEfuseMac();
+  sprintf(buf, "%04X%08X", (uint16_t)(chipid>>32), (uint32_t)chipid);
+  return String(buf);
+}
+
 void composeAndSendMetadata() {
   StaticJsonDocument<255> doc_data;
   String ipstring = (
@@ -55,7 +62,7 @@ void composeAndSendMetadata() {
   doc_data["latitude"] = 30.515270;
   doc_data["ip"] = ipstring;
   doc_data["mac"] = String(WiFi.macAddress());
-  doc_data["serial"] = String(ESP.getChipId());
+  doc_data["serial"] = String(getChipId());
 
   kaa.sendMetadata(doc_data.as<String>().c_str());
 }
@@ -128,7 +135,7 @@ void reconnect() {
   PRINT_DBG("Attempting MQTT connection to %s:%u ...", mqtt_host, mqtt_port);
   // Create client ID
   String clientId = "ESP8266Client-";
-  clientId += String(ESP.getChipId());
+  clientId += String(getChipId());
   // Attempt to connect
   if (client.connect(clientId.c_str()))
   {

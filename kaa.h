@@ -260,6 +260,8 @@ public:
     sprintf( topic_buffer, "%s/%d", config_topic, random(1, 100000) );
     PRINT_DBG("Publishing: %s %s\n", topic_buffer, request_config_payload);
     pub_sub_client_ptr->publish(topic_buffer, request_config_payload);
+
+    return 0;
   }
 };
 

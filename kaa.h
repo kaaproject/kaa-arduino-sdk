@@ -21,11 +21,14 @@ private:
 
   char metadata_update_topic[100];
   char config_topic[100];
+  char config_response_topic[100];
   char data_topic[100];
   char command_topic[100];
   char command_result_topic[100];
 
   int (*commandCallback)(char* command_type, char* payload, unsigned int len);
+  void (*configResponseCallback)(char* request_status, char* payload, unsigned int len);
+  void (*configPushCallback)(char* payload, unsigned int len);
 
   #ifndef EXTERNAL_DEBUG_IMPLEMENTATION
   void printMsg(const char * msg, ...) {
@@ -37,6 +40,50 @@ private:
     Serial.print(buff);
   }
   #endif
+
+  bool isNumber(char* token) {
+    for (int i = 0; i < strlen(token); i++) {
+      char c = token[i];
+
+      if(c < '0' || c > '9'){
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  void cmxMessageHandler(char* topic_part, char* payload, unsigned int len) {
+    char* rest = topic_part;
+    char* token = strtok_r(rest, "/", &rest);
+    if (!strcmp(token, kaa_token)) {
+      token = strtok_r(rest, "/", &rest);
+      if (!strcmp(token, "config")) {
+        token = strtok_r(rest, "/", &rest);
+        if (!strcmp(token, "json")) {
+          token = strtok_r(rest, "/", &rest);
+          if (isNumber(token)) {
+            token = strtok_r(rest, "/", &rest);
+            PRINT_DBG("\nConfig response [%s] received\n", token);
+            if (configResponseCallback != NULL) {
+              configResponseCallback(token, payload, len);
+            } else {
+              PRINT_DBG("Config response callback is not set. Ignoring incoming config response...\n");
+            }
+          } else if (!strcmp(token, "status")) {
+            PRINT_DBG("\nConfig push received\n");
+            if (configPushCallback != NULL) {
+              configPushCallback(payload, len);
+            } else {
+              PRINT_DBG("Config push callback is not set. Ignoring incoming config push...\n");
+            }
+          } else {
+            PRINT_DBG("\nError config message was received: %s. Ignoring it...\n", token);
+          }
+        }
+      }
+    }
+  }
 
   void cexMessageHandler(char* topic_part, char* payload, unsigned int len) {
     char command_type[50];
@@ -75,6 +122,14 @@ public:
       commandCallback = _commandCallback;
   }
 
+  void setConfigResponseCallback(void (*_configResponseCallback)(char* request_status, char* payload, unsigned int len)) {
+      configResponseCallback = _configResponseCallback;
+  }
+
+  void setConfigPushCallback(void (*_configPushCallback)(char* payload, unsigned int len)) {
+      configPushCallback = _configPushCallback;
+  }
+
   void setToken(char* _kaa_token){
       kaa_token = _kaa_token;
   }
@@ -86,21 +141,15 @@ public:
   void composeTopics() {
     sprintf(metadata_update_topic, "%s/%s/%s/%s/update/keys", KPC_INSTANCE_NAME, kaa_application_version, EPMX_INSTANCE_NAME, kaa_token);
     sprintf(config_topic, "%s/%s/%s/%s/config/json", KPC_INSTANCE_NAME, kaa_application_version, CMX_INSTANCE_NAME, kaa_token);
+    sprintf(config_response_topic, "%s/%s/%s/%s/config/json/+/status", KPC_INSTANCE_NAME, kaa_application_version, CMX_INSTANCE_NAME, kaa_token);
     sprintf(data_topic, "%s/%s/%s/%s/json", KPC_INSTANCE_NAME, kaa_application_version, DCX_INSTANCE_NAME, kaa_token);
     sprintf(command_topic, "%s/%s/%s/%s/command", KPC_INSTANCE_NAME, kaa_application_version, CEX_INSTANCE_NAME, kaa_token);
     sprintf(command_result_topic, "%s/%s/%s/%s/result", KPC_INSTANCE_NAME, kaa_application_version, CEX_INSTANCE_NAME, kaa_token);
   }
 
-  void sendMetadata(const char* metadata_str) {
-    char topic_buffer[200];
-    sprintf( topic_buffer, "%s/%d", metadata_update_topic, random(1, 100000) );
-
-    PRINT_DBG("Publishing: %s %s\n", topic_buffer, metadata_str);
-    pub_sub_client_ptr->publish(topic_buffer, metadata_str);
-  }
-
   void connect() {
     pub_sub_client_ptr->subscribe(config_topic);
+    pub_sub_client_ptr->subscribe(config_response_topic);
   }
 
   void messageArrivedCallback(const char* topic_recv, const char* payload_recv, unsigned int len) {
@@ -135,12 +184,11 @@ public:
         //CMX
         else if (!strcmp(token, CMX_INSTANCE_NAME)) {
           PRINT_DBG("Message for CMX\n");
-          //Do something
+          cmxMessageHandler(rest, payload, len);
         }
         //CEX
         else if (!strcmp(token, CEX_INSTANCE_NAME)) {
           PRINT_DBG("Message for CEX\n");
-          //PRINT_DBG("%s\n", rest);
           cexMessageHandler(rest, payload, len);
         }
       }
@@ -188,12 +236,32 @@ public:
     pub_sub_client_ptr->publish(topic_buffer, payload);
   }
 
-  void requestConfig() {
+  void sendDataRawUnreliably(const char* payload) {
+    PRINT_DBG("Publishing: %s %s\n", data_topic, payload);
+    pub_sub_client_ptr->publish(data_topic, payload);
+  }
+
+  void sendMetadata(const char* metadata_str) {
+    char topic_buffer[200];
+    sprintf( topic_buffer, "%s/%d", metadata_update_topic, random(1, 100000) );
+
+    PRINT_DBG("Publishing: %s %s\n", topic_buffer, metadata_str);
+    pub_sub_client_ptr->publish(topic_buffer, metadata_str);
+  }
+
+  int requestConfig() {
+    if (configResponseCallback == NULL) {
+      PRINT_DBG("Config response callback must be set to request config\n");
+      return 1;
+    }
+
     char topic_buffer[200];
     char request_config_payload[] = "{\"observe\": true}";
     sprintf( topic_buffer, "%s/%d", config_topic, random(1, 100000) );
     PRINT_DBG("Publishing: %s %s\n", topic_buffer, request_config_payload);
     pub_sub_client_ptr->publish(topic_buffer, request_config_payload);
+
+    return 0;
   }
 };
 
